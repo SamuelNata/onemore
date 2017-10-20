@@ -4,16 +4,15 @@ class Bullet():
     bornTime = 0
     startPosition = (0, 0)
     range = 300
-    acurracy = 5
     size = 1
     direction = (1, 1)
     player = None
     die = False
     lifeTime = 500
+    damage = 10
 
-    def __init__(self, p):
+    def __init__(self):
         self.bornTime = pygame.time.get_ticks()
-        self.player = p
 
     def endPosition(self):
         return (self.startPosition[0]+self.direction[0]*self.range,

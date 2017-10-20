@@ -1,3 +1,5 @@
+from domain.Gun import Gun
+
 class Player():
     hp = 0
     maxHp = 0
@@ -5,12 +7,13 @@ class Player():
     maxEnergy = 0
     itens = []
     position = (50, 50)
-    equipedGun = None
+    equipedGun = Gun()
     equipedHelmet = None
     equipedArmor = None
     itens = []
     color = (250,0,0)
     moveSpeed = 5
+    ray = 10
 
     def __init__(self, color):
         self.color = color
@@ -21,3 +24,8 @@ class Player():
         self.maxEnergy = 100
         self.energy = self.maxEnergy
         self.moveSpeed = 5
+
+    def takeShot(self, bullet):
+        self.hp -= 10
+        bullet.die = True
+

@@ -10,9 +10,16 @@ choseResolution = 0
 def start():
     pygame.init()
     p = Player((200,0,0))
+    p2 = Player((100, 100, 0))
+    p2.position = (100, 100)
     p.prepare()
+    p2.prepare()
+    players = []
+    players.append(p)
+    players.append(p2)
+
     gameDisplay = display.set_mode( resolution[choseResolution] )
-    display.set_caption('One More')
+    display.set_caption('Survival\'s King')
     clock = pygame.time.Clock()
     bullets = []
     crashed = False
@@ -30,18 +37,18 @@ def start():
         if keys[pygame.K_d]:
             p.position = (p.position[0] + p.moveSpeed, p.position[1])
         if pygame.mouse.get_pressed()[0]==1:
-            b = Bullet(p)
-            b.startPosition = p.position
-            b.size = 2
-            b.direction = vetUnitario((pygame.mouse.get_pos()[0]-p.position[0], pygame.mouse.get_pos()[1]-p.position[1]))
-            bullets.append(b)
+            p.equipedGun.fire(p, p.position, (pygame.mouse.get_pos()[0]-p.position[0], pygame.mouse.get_pos()[1]-p.position[1]), bullets)
 
-        for bullet in bullets:
-            drawBullet(bullet, gameDisplay)
-            if bullet.die:
-                bullets.remove(bullet)
+        for player in players:
+            for bullet in bullets:
+                drawBullet(bullet, gameDisplay)
+                if hit(player, bullet):
+                    player.takeShot(bullet)
+                if bullet.die:
+                    bullets.remove(bullet)
+            drawPlayer(player, gameDisplay)
 
-        drawPlayer(p, gameDisplay)
+
         drawStatsPanel(p, gameDisplay)
         display.update()
         gameDisplay.fill((0,0,0))
@@ -55,10 +62,11 @@ def vetUnitario(v):
     return (v[0]/module(v), v[1]/module(v))
 
 def drawPlayer(p, display):
-    r = 10
-    draw.circle(display, p.color, p.position, r)
-    life = pygame.Rect(p.position[0] - r, p.position[1]+20, r*2, 2)
-    draw.rect(display, (0,200,0), life, 0)
+    if p.hp>0:
+        draw.circle(display, p.color, p.position, p.ray)
+    #draw.circle(display, (0,0,0), p.position, 2)
+    #life = pygame.Rect(p.position[0] - r, p.position[1]+20, r*2, 2)
+    #draw.rect(display, (0,200,0), life, 0)
 
 def drawStatsPanel(p, display):
     res = resolution[choseResolution]
@@ -75,5 +83,12 @@ def drawStatsPanel(p, display):
 
 def drawBullet(b, display):
     draw.line(display, (100, 100, 0), b.startBulletPoint(), b.endBulletPoint(), b.size)
+
+def hit (player, bullet):
+    if player==bullet.player:
+        return False
+    pos1 = player.position
+    pos2 = bullet.endBulletPoint()
+    return sqrt( (pos1[0]-pos2[0])**2 + (pos1[1]-pos2[1])**2 ) <= player.ray
 
 start()
