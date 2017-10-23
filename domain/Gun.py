@@ -1,9 +1,10 @@
 import utils.Utils as Utils
 from domain.Bullet import Bullet
+from domain.Item import Item
 import pygame
 
 
-class Gun():
+class Gun(Item):
     range = 300
     acurracy = 5
     maxLoad = 50

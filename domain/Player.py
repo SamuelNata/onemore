@@ -1,4 +1,5 @@
 from domain.Gun import Gun
+import pygame
 
 class Player():
     hp = 0
@@ -6,7 +7,7 @@ class Player():
     energy = 0
     maxEnergy = 0
     itens = []
-    position = (50, 50)
+    pos = (50, 50)
     equipedGun = Gun()
     equipedHelmet = None
     equipedArmor = None
@@ -14,6 +15,9 @@ class Player():
     color = (250,0,0)
     moveSpeed = 5
     ray = 10
+    dead = False
+    ground = []
+    lastUpdate = pygame.time.get_ticks()
 
     def __init__(self, color):
         self.color = color
