@@ -28,12 +28,12 @@ def start():
     clock = pygame.time.Clock()
     bullets = []
 
-    itens = []
+    gameItens = []
     item1 = Gun()
     item1.damage = 35
     item1.pos = (150, 150)
 
-    itens.append(item1)
+    gameItens.append(item1)
 
     crashed = False
     fpsCounter = 0
@@ -55,19 +55,18 @@ def start():
             p.pos = (p.pos[0] + p.moveSpeed, p.pos[1])
         if pygame.mouse.get_pressed()[0]==1:
             if keys[pygame.K_f]:
-                (it, gr, eq) = mouseOver()
-                print('mouseOver = ', (it, gr, eq))
+                (gr, it, eq) = mouseOver()
                 if it>=0 and len(p.itens)>it:
                     pass
                 if gr >= 0 and len(p.ground) > gr:
                     p.itens.append(p.ground[gr])
-                    itens.remove(itens[gr])
+                    gameItens.remove(p.ground[gr])
                 if eq >= 0 and len(p.itens) > eq:
                     pass
             else:
                 p.equipedGun.fire(p, p.pos, (pygame.mouse.get_pos()[0]-p.pos[0], pygame.mouse.get_pos()[1]-p.pos[1]), bullets)
 
-        for item in itens:
+        for item in gameItens:
             drawItem(item, gameDisplay)
 
         for player in players:
@@ -79,7 +78,7 @@ def start():
                 if bullet.die:
                     bullets.remove(bullet)
 
-            for item in itens:
+            for item in gameItens:
                 if colide(player, item):
                     player.ground.append(item)
             drawPlayer(player, gameDisplay)
@@ -100,6 +99,8 @@ def start():
 
         display.update()
         gameDisplay.fill((0,0,0))
+        #gameDisplay.fill(pygame.image.load('/sprits/ground.png'))
+
 
         clock.tick(30)
     pygame.quit()
@@ -132,6 +133,9 @@ def drawStatsPanel(p, display):
     energy = pygame.Rect(life.x, life.y + 2*topMargin + 4, (bg.width - 2*sideMargin) * (p.energy/p.maxEnergy), 18)
     draw.rect(display, (100, 100, 0), energy, 0)
 
+    gunRay = 30
+    draw.circle(display, (50,50,50), (int(res[0]/4-gunRay), res[1]-gunRay), gunRay, 0)
+
 def drawInventory(display, itens, ground):
     global step
     #GROUND GRIDS
@@ -151,8 +155,8 @@ def drawInventory(display, itens, ground):
                            2 * step + int(idx/2) * step, step, step)
         pygame.draw.rect(display, (200,200,200), rect, 3)
     #INVENTOTY ITENS
-    for idx, item in itens:
-        rect = pygame.Rect(resolution[choseResolution][0] / 2 - 4 * step + (idx % 2) * step + .2 * step,
+    for idx, item in enumerate(itens):
+        rect = pygame.Rect(resolution[choseResolution][0] / 2 - step + (idx % 2) * step + .2 * step,
                            2 * step + int(idx/2) * step + .2 * step, step*.6, step*.6)
         pygame.draw.rect(display, (100,50,50), rect, 0)
 
@@ -197,19 +201,20 @@ def mouseOver():
     #MOUSE IN GROUND
     for idx in range(10):
         xi = resolution[choseResolution][0] / 2 - 4 * step + (idx % 2) * step
-        yi = resolution[choseResolution][0] / 2 + (idx % 2) * step
+        yi = 2 * step + int(idx/2) * step
         if mpos[0] > xi and mpos[1] > yi and mpos[0] < xi + step and mpos[1] < yi + step :
             return (idx, -1, -1)
     #MOUSE IN INVENTORY
     for idx in range(10):
         xi = resolution[choseResolution][0] / 2 - step + (idx % 2) * step
-        yi = resolution[choseResolution][0] / 2 + (idx % 2) * step
+        yi = 2 * step + int(idx/2) * step
         if mpos[0] > xi and mpos[1] > yi and mpos[0] < xi + step and mpos[1] < yi + step :
             return (-1, idx, -1)
     #MOUSE IN EQUIPS
     for idx in range(3):
-        xi = resolution[choseResolution][0] / 2 - step + (idx % 2) * step
-        if mpos[0] > xi and mpos[1] > 2 * step + idx * 2 * step and mpos[0] < xi + step and mpos[1] < 2 * step + idx * 2 * step + step :
+        xi = resolution[choseResolution][0] / 2 + 2 * step
+        yi = 2 * step + idx * 2 * step
+        if mpos[0] > xi and mpos[1] > yi and mpos[0] < xi + step and mpos[1] < yi + step :
             return (-1, -1, idx)
     return (-1, -1, -1)
 start()

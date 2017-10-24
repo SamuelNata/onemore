@@ -1,9 +1,11 @@
-class Item():
+import pygame
+
+class Item(pygame.sprite.Sprite):
     pos = (0,0)
     name = "item"
     consumable = True
     itemType = ""
-    sprite = ""
+    sprite = "/sprits/isp1.png"
     ray = 3
     mouseDrag = False
 
@@ -12,3 +14,4 @@ class Item():
 
     def apply(self, p):
         pass
+
