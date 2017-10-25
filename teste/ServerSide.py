@@ -3,14 +3,26 @@ import threading
 import json
 import pygame
 import time
+from domain.Player import Player
+
+maps = []
+games = []
+maxGameId = 0
+maxPlayerId = 0
+
+timeMillis = lambda: int(round(time.time()*1000))
+
+def getGame(gameId):
+    global games
+    for game in games:
+        if game['id']==gameId:
+            return game
+    return None
 
 players = []
 items = []
-maps = []
 
-playerDataReceiveModel = {"id":0, "posx":0, "posy":0, "bullets":[
-                                                                    {
-                                                                        "bornTime": 0,
+playerDataReceiveModel = {"id":0, "posx":0, "posy":0, "bullets":[{      "bornTime": 0,
                                                                         "startPosition": (0, 0),
                                                                         "range": 300,
                                                                         "size": 1,
@@ -19,14 +31,12 @@ playerDataReceiveModel = {"id":0, "posx":0, "posy":0, "bullets":[
                                                                         "die": False,
                                                                         "lifeTime": 500,
                                                                         "damage": 10
-                                                                    }
-                                                                ], "alive":True}
+                                                                                    }], "alive":True}
 
 class Server(threading.Thread):
     __host = "127.0.0.1"
     __port = 5000
     __nome = "Servidor"
-    __mySocket = socket.socket()
     __map = 0
 
     def __init__(self, nome, mapNum):
@@ -36,83 +46,66 @@ class Server(threading.Thread):
 
     def run(self):
         handlerList = []
-        while len(handlerList)<2:
+        while True:
             skt = socket.socket()
             skt.bind((self.__host, self.__port))
             skt.listen(1)
+            #print("Waiting connection...")
             conn, addr = skt.accept()
-            print("Recive connection from: " + str(addr))
-            hp = HandlePlayer(conn, addr)
+            #print("Receive connection from: " + str(addr))
+            hp = ServerHandler(conn, addr, skt)
             handlerList.append(hp)
             hp.start()
-        for p in handlerList:
-            p.join()
+            print('get a player to handle')
 
 
-class HandlePlayer(threading.Thread):
+class ServerHandler(threading.Thread):
     __conn = 0
     __addr = 0
+    __skt = 0
+    __gameId = -1
+    __playerId = -1
 
-    def __init__(self, conn, addr):
+    def __init__(self, conn, addr, soket):
         threading.Thread.__init__(self)
         self.__conn = conn
         self.__addr = addr
+        self.__skt = soket
 
     def run(self):
-        print("Recive connection from: " + str(self.__addr))
         while True:
-            data = self.__conn.recv(1024).decode()
+            data = self.__skt.recv(1024)
             if not data:
-                print("No data recived from: ", self.__addr)
+                print("No data received from: ", self.__addr, ". Closing connection.")
                 break
-            print("from", self.__addr, ": ", str(data))
-            if not ('id' in data and 'posx' in data and 'posy' in data and 'bullets' in data and 'alive' in data):
-                print("The client is not returning right values.")
-                data = "ERROR!"
+            request = json.dumps(data)
+            if request['ask']==0:
+                self.insertInGame(request['gameId'])
+            elif request['ask']==1:
+                gameId = self.newGame()
+                if gameId>=0:
+                    response = '{"value":"SUCCESS", "gameId":'+str(gameId)+'}'
+                else:
+                    response = '{"value":"FAIL", "msg":' + ' I dont know what happens :/' + '}'
             else:
-                data = "OK!"
-            print("sending: " + str(data))
-            self.__conn.send(data.encode())
-        print("Closing connection with: ", self.__addr)
+                response = '{"value":"FAIL", "msg": ' + 'Invalid request' + '}'
+            self.__conn.send(response.encode())
         self.__conn.close()
 
-class  Client(threading.Thread):
-    __host = '127.0.0.1'
-    __port = 5000
-    __nome = ""
-    __mySocket = socket.socket()
-    __sendPerSecond = 20
-    __lastSend = 0
+    def insertInGame(self, gameId):
+        game = getGame(gameId)
+        r, g, b = 150, 0, 0
+        p = Player((100+r,100+g,100+b))
+        global maxPlayerId
+        maxPlayerId += 1
+        p.id = maxPlayerId
+        game["players"].append(p)
 
-    def __init__(self, nome):
-        threading.Thread.__init__(self)
-        self.nome = nome
-
-    def run(self):
-        mySocket = socket.socket()
-        mySocket.connect((self.__host, self.__port))
-
-        data = input(" -> ")
-
-        while data != 'q':
-            if pygame.time.get_ticks()-self.__lastSend >= 1./self.__sendPerSecond :
-                mySocket.send(json.dumps(playerDataReceiveModel).encode())
-                data = mySocket.recv(1024)
-                print('Received from server: ', data)
-                data = input(" -> ")
-            if (1./self.__sendPerSecond)-(pygame.time.get_ticks()-self.__lastSend) > 0 :
-                time.sleep((1./self.__sendPerSecond)-(pygame.time.get_ticks()-self.__lastSend))
-        mySocket.close()
-
-s = Server("Servidor", 0)
-c = Client("Cliente")
-
-s.start()
-c.start()
-
-l = []
-l.append(s)
-l.append(c)
-
-for t in l:
-    t.join()
+    def newGame(self):
+        global maxGameId
+        global games
+        if len(games)>1:
+            return -1
+        else:
+            maxGameId += 1
+            games.append( {"id":maxGameId, "players":[], "items":[], "bullets":[]} )

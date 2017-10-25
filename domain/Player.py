@@ -18,6 +18,7 @@ class Player():
     dead = False
     ground = []
     lastUpdate = pygame.time.get_ticks()
+    id = -1
 
     def __init__(self, color):
         self.color = color
