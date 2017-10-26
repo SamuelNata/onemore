@@ -22,7 +22,8 @@ mainMenu = """
 0 - Connect to game
 1 - Create a new game
 2 - Exit
-Select the number: """
+Select the number:
+"""
 
 class  Client(threading.Thread):
     __host = '127.0.0.1'

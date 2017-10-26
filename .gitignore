@@ -149,3 +149,6 @@ com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 fabric.properties
+
+# Things PyCharm askme to add to git
+.idea\vsc.xml

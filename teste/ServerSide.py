@@ -45,52 +45,34 @@ class Server(threading.Thread):
         self.__map = maps[mapNum] if mapNum>=0 and mapNum<len(maps) else None
 
     def run(self):
-        handlerList = []
+        skt = socket.socket()
+        skt.bind((self.__host, self.__port))
+        skt.listen(5)
         while True:
-            skt = socket.socket()
-            skt.bind((self.__host, self.__port))
-            skt.listen(1)
-            #print("Waiting connection...")
             conn, addr = skt.accept()
-            #print("Receive connection from: " + str(addr))
-            hp = ServerHandler(conn, addr, skt)
-            handlerList.append(hp)
-            hp.start()
-            print('get a player to handle')
+            data = skt.recv(1024)
+            self.ServerHandler(conn, data)
 
+            print('get a package to handle')
+            conn.close()
 
-class ServerHandler(threading.Thread):
-    __conn = 0
-    __addr = 0
-    __skt = 0
-    __gameId = -1
-    __playerId = -1
-
-    def __init__(self, conn, addr, soket):
-        threading.Thread.__init__(self)
-        self.__conn = conn
-        self.__addr = addr
-        self.__skt = soket
-
-    def run(self):
-        while True:
-            data = self.__skt.recv(1024)
-            if not data:
-                print("No data received from: ", self.__addr, ". Closing connection.")
-                break
-            request = json.dumps(data)
-            if request['ask']==0:
-                self.insertInGame(request['gameId'])
-            elif request['ask']==1:
-                gameId = self.newGame()
-                if gameId>=0:
-                    response = '{"value":"SUCCESS", "gameId":'+str(gameId)+'}'
-                else:
-                    response = '{"value":"FAIL", "msg":' + ' I dont know what happens :/' + '}'
+    def ServerHandler(self, conn, data):
+        if not data:
+            print("No data received")# from: ", addr, ". Closing connection.")
+            return
+        request = json.dumps(data)
+        if request['ask']==0:
+            self.insertInGame(request['gameId'])
+            response = '{"value":"SUCCESS"}'
+        elif request['ask']==1:
+            gameId = self.newGame()
+            if gameId>=0:
+                response = '{"value":"SUCCESS", "gameId":'+str(gameId)+'}'
             else:
-                response = '{"value":"FAIL", "msg": ' + 'Invalid request' + '}'
-            self.__conn.send(response.encode())
-        self.__conn.close()
+                response = '{"value":"FAIL", "msg":' + ' I dont know what happens :/' + '}'
+        else:
+            response = '{"value":"FAIL", "msg": ' + 'Invalid request' + '}'
+        conn.send(response.encode())
 
     def insertInGame(self, gameId):
         game = getGame(gameId)
