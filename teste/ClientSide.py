@@ -19,9 +19,9 @@ playerDataReceiveModel = {"id":0, "posx":0, "posy":0, "bullets":[
                                                                     }
                                                                 ], "alive":True}
 mainMenu = """  
-0 - Connect to game
-1 - Create a new game
-2 - Exit
+1 - Connect to game
+2 - Create a new game
+3 - Exit
 Select the number:
 """
 
@@ -42,54 +42,41 @@ class  Client(threading.Thread):
         # self.__host = input('Type the server ip: ')
         self.__mySocket = socket.socket()
         self.__mySocket.connect((self.__host, self.__port))
+        print("Client conectado a porta ", self.__port, " e IP ", self.__host)
         global mainMenu
         command = int(input(mainMenu))
-        while command<2:
-            if command==0:
+        while command < 3:
+            if command == 1:
                 self.connectToGame(input("Type de game id: "))
-            elif command==1:
+            elif command == 2:
                 self.createNewGame()
-
+            command = int(input(mainMenu))
 
     def connectToGame(self, gameId):
         print('Connecting to game', gameId)
         self.__mySocket.send(json.dumps('{"ask":0, "gameId":'+str(gameId)+'}').encode())
-        response = json.loads(self.__mySocket.recv(1024))
+        response = json.loads(self.__mySocket.recv(1024).decode())
         print(response)
-        if response['value']=='SUCCESS':
+        if response['value'] == 'SUCCESS':
             print("Connection successful")
-            #play()
-            while not pygame.key.get_pressed()[pygame.K_ESCAPE]:
-                if timeMillis() - self.__lastSend >= 1 / self.__sendPerSecond:
-                    self.__mySocket.send(json.dumps(playerDataReceiveModel).encode())
-                    command = self.__mySocket.recv(1024)
-                    self.__lastSend = timeMillis()
-                if (1. / self.__sendPerSecond) - (timeMillis() - self.__lastSend) > 0:
-                    time.sleep((1. / self.__sendPerSecond) - (timeMillis() - self.__lastSend))
-            self.__mySocket.close()
-        elif response['value']=='FAIL':
+            self.play()
+        elif response['value'] == 'FAIL':
             print("Cant connect: ", response['msg'])
         else:
             print("A error occurred.")
 
     def createNewGame(self):
         self.__mySocket.send(json.dumps('{"ask":1}').encode())
-        response = json.loads(self.__mySocket.recv(1024))
-        if response['value']=='SUCCESS':
+        response = json.loads(self.__mySocket.recv(1024).decode())
+        if response['value'] == 'SUCCESS':
             self.__gameId = response['gameId']
             self.connectToGame(self.__gameId)
-        elif response['value']=='FAIL':
+        elif response['value'] == 'FAIL':
             print('Cant create game: ', response['msg'])
         else:
             print('A error occurred. :O')
 
     def play(self):
-        pass
-
-from teste.ServerSide import Server
-
-s = Server("SERVER", 0)
-s.start()
-
-c = Client("CLIENTE")
-c.start()
+        while True:
+            print("Playing")
+            time.sleep(1)
