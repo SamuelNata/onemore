@@ -1,9 +1,7 @@
 import pygame
 from pygame import display, draw
 from domain.Player import Player
-from domain.Bullet import Bullet
 from domain.Gun import Gun
-from domain.Item import Item
 from math import sqrt
 
 resolution = [(800, 600)]

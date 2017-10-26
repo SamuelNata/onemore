@@ -19,6 +19,7 @@ def getGame(gameId):
             return game
     return None
 
+simpleplayerDataReceiveModel = {"id": 0, "posx": 0, "posy": 0, "alive": True}
 
 playerDataReceiveModel = {"id": 0, "posx": 0, "posy": 0, "bullets": [{"bornTime": 0,
                                                                       "startPosition": (0, 0),
@@ -71,16 +72,15 @@ class ServerHandler(threading.Thread):
             if not data:
                 print("No data received")
                 return
-            else:
-                print("Data: ", data, ";   Type: ", type(data))
+            # print("Data: ", data, ";   Type: ", type(data))
             request = json.loads(data)
             if request['ask'] == 0:
-                self.insertInGame(request['gameId'])
-                response = '{"value":"SUCCESS"}'
-            elif int(request['ask']) == 1:
+                playerId = self.insertInGame(request['gameId'])
+                response = '{"value":"SUCCESS", "playerId":' + playerId + '}'
+            elif request['ask'] == 1:
                 gameId = self.newGame()
                 if gameId >= 0:
-                    response = '{"value":"SUCCESS", "gameId":'+str(gameId)+'}'
+                    response = '{"value":"SUCCESS", "gameId":' + str(gameId) + '}'
                 else:
                     response = '{"value":"FAIL", "msg":' + ' I dont know what happens :/' + '}'
             else:
@@ -93,8 +93,9 @@ class ServerHandler(threading.Thread):
         p = Player((100+r, 100+g, 100+b))
         global maxPlayerId
         maxPlayerId += 1
-        p.id = maxPlayerId
+        p.addr = self.__addr
         game["players"].append(p)
+        return maxPlayerId
 
     def newGame(self):
         global maxGameId
@@ -106,4 +107,24 @@ class ServerHandler(threading.Thread):
             games.append({"id": maxGameId, "players": [], "items": [], "bullets": []})
             return maxGameId
 
+    def play(self):
+        while True:
+            data = self.__conn.recv(1024).decode()
+            data = json.loads(data)
+            if not data:
+                print("No data received")
+            request = json.loads(data)
+            if request['ask'] == 0:
+                playerId = self.insertInGame(request['gameId'])
+                response = '{"value":"SUCCESS", "playerId":' + playerId + '}'
+            elif request['ask'] == 1:
+                gameId = self.newGame()
+                if gameId >= 0:
+                    response = '{"value":"SUCCESS", "gameId":' + str(gameId) + '}'
+                else:
+                    response = '{"value":"FAIL", "msg":' + ' I dont know what happens :/' + '}'
+            else:
+                response = '{"value":"FAIL", "msg": Invalid request}'
+            self.__conn.send(response.encode())
+            print("Playing")
 
