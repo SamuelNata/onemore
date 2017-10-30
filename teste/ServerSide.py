@@ -1,8 +1,9 @@
+import json
 import socket
 import threading
-import json
 import time
-from domain.Player import Player
+
+from clientSide.Player import Player
 
 maps = []
 games = []
@@ -68,21 +69,27 @@ class ServerHandler(threading.Thread):
     def run(self):
         while True:
             data = self.__conn.recv(1024).decode()
+            print("data: ", data, ";   Type: ", type(data))
+            if data=='':
+                print("Client close connection")
+                return
             data = json.loads(data)
             if not data:
                 print("No data received")
                 return
-            # print("Data: ", data, ";   Type: ", type(data))
-            request = json.loads(data)
+
+            request = data
             if request['ask'] == 0:
                 playerId = self.insertInGame(request['gameId'])
-                response = '{"value":"SUCCESS", "playerId":' + playerId + '}'
+                response = '{"value":"SUCCESS", "playerId":' + str(playerId) + '}'
             elif request['ask'] == 1:
                 gameId = self.newGame()
                 if gameId >= 0:
                     response = '{"value":"SUCCESS", "gameId":' + str(gameId) + '}'
                 else:
                     response = '{"value":"FAIL", "msg":' + ' I dont know what happens :/' + '}'
+            elif request['ask'] == 2:
+                response = "ok"
             else:
                 response = '{"value":"FAIL", "msg": Invalid request}'
             self.__conn.send(response.encode())
@@ -108,23 +115,18 @@ class ServerHandler(threading.Thread):
             return maxGameId
 
     def play(self):
-        while True:
+        print("playing...")
+        # simpleplayerDataReceiveModel = {"id": 0, "posx": 0, "posy": 0, "alive": True}
+        isAlive = True
+        while isAlive:
             data = self.__conn.recv(1024).decode()
             data = json.loads(data)
             if not data:
                 print("No data received")
             request = json.loads(data)
-            if request['ask'] == 0:
-                playerId = self.insertInGame(request['gameId'])
-                response = '{"value":"SUCCESS", "playerId":' + playerId + '}'
-            elif request['ask'] == 1:
-                gameId = self.newGame()
-                if gameId >= 0:
-                    response = '{"value":"SUCCESS", "gameId":' + str(gameId) + '}'
-                else:
-                    response = '{"value":"FAIL", "msg":' + ' I dont know what happens :/' + '}'
+            print("Request: ", request, ";   type: ", type(request) )
+            if not ("id" in request and "posx" in request and "posy" in request and "alive" in request) :
+                print("ServiceSide:play: ta faltando campos nos dados recebidos")
             else:
-                response = '{"value":"FAIL", "msg": Invalid request}'
-            self.__conn.send(response.encode())
-            print("Playing")
-
+                print("Recived: id=", request['id'], ", x=", request['posx'], ', y=', request['posy'], ', alive=', request['alive'])
+                self.__conn.send("ok".encode())

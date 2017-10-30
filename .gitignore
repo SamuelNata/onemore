@@ -152,3 +152,4 @@ fabric.properties
 
 # Things PyCharm askme to add to git
 .idea\vsc.xml
+log\*

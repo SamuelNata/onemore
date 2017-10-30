@@ -1,8 +1,10 @@
+from math import sqrt
+
 import pygame
 from pygame import display, draw
-from domain.Player import Player
+
+from clientSide.Player import Player
 from domain.Gun import Gun
-from math import sqrt
 
 resolution = [(800, 600)]
 choseResolution = 0

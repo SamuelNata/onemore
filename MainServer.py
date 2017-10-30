@@ -1,5 +1,13 @@
-from teste.ServerSide import Server
+from serverSide.Server import RequestHandler, RequestReciver
+from utils.Utils import logf
 
-s = Server("servidor", 0)
+rr = RequestReciver()
+rh = RequestHandler()
 
-s.start()
+logf("Start Handler", True)
+rh.start()
+logf("Start Reciver", True)
+rr.start()
+
+rr.join()
+rh.join()

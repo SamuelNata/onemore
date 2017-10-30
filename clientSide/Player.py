@@ -3,9 +3,9 @@ import pygame
 
 class Player():
     hp = 0
-    maxHp = 0
+    maxHp = 1
     energy = 0
-    maxEnergy = 0
+    maxEnergy = 1
     itens = []
     pos = (50, 50)
     equipedGun = Gun()
@@ -24,9 +24,9 @@ class Player():
         self.color = color
 
     def prepare(self):
-        self.maxHp = 100
+        self.maxHp = 1000
         self.hp = self.maxHp
-        self.maxEnergy = 100
+        self.maxEnergy = 500
         self.energy = self.maxEnergy
         self.moveSpeed = 5
 

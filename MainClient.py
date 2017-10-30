@@ -1,5 +1,5 @@
-from teste.ClientSide import Client
+from clientSide.Client import Client
 
-c = Client("Cliente")
-
+c = Client()
 c.start()
+c.join()

@@ -1,12 +1,13 @@
-import threading
-import socket
 import json
+import socket
+import threading
 import time
-import pygame
-from pygame import draw, display
 from math import sqrt
 
-from domain.Player import Player
+import pygame
+from pygame import draw, display
+
+from clientSide.Player import Player
 
 resolution = [(800, 600)]
 choseResolution = 0
@@ -45,6 +46,7 @@ class  Client(threading.Thread):
     __sendPerSecond = 20
     __lastSend = 0
     __gameId = -1
+    __myAddr = ''
 
     def __init__(self, nome):
         threading.Thread.__init__(self)
@@ -67,7 +69,7 @@ class  Client(threading.Thread):
 
     def connectToGame(self, gameId):
         print('Connecting to game', gameId)
-        self.__mySocket.send(json.dumps('{"ask":0, "gameId":'+str(gameId)+'}').encode())
+        self.__mySocket.send(('{"ask":0, "gameId":'+str(gameId)+'}').encode())
         response = json.loads(self.__mySocket.recv(1024).decode())
         print(response)
         if response['value'] == 'SUCCESS':
@@ -81,15 +83,18 @@ class  Client(threading.Thread):
             return False
 
     def createNewGame(self):
-        self.__mySocket.send(json.dumps('{"ask":1}').encode())
+        self.__mySocket.send(('{"ask":1}').encode())
         response = json.loads(self.__mySocket.recv(1024).decode())
         if response['value'] == 'SUCCESS':
             self.__gameId = response['gameId']
-            self.connectToGame(self.__gameId)
+            if self.connectToGame(self.__gameId):
+                return True
         elif response['value'] == 'FAIL':
             print('Cant create game: ', response['msg'])
+            return False
         else:
             print('A error occurred. :O')
+            return False
 
     def playing(self):
         gameDisplay = pygame.display.set_mode(resolution[choseResolution])
@@ -97,6 +102,7 @@ class  Client(threading.Thread):
         clock = pygame.time.Clock()
         crashed = False
         p = Player((250, 0, 0))
+        p.prepare()
         p.position = (100, 100)
         gameItems = []
         players = []
@@ -155,7 +161,12 @@ class  Client(threading.Thread):
                 self.drawInventory(gameDisplay, p.itens, p.ground)
 
             display.update()
-            self.__mySocket.send(.encode())
+            # simpleplayerDataReceiveModel = {"id":0, "posx":0, "posy":0, "alive":True}
+            dict = {"ask":2, "id":0, "posx":p.pos[0], "posy":p.pos[1], "alive":(p.hp>0)}
+            self.__mySocket.send(json.dumps(dict).encode())
+            if self.__mySocket.recv(1024).decode() != 'ok':
+                crashed = True
+                print('Servidor não retornou OK')
             gameDisplay.fill((0, 0, 0))
 
             clock.tick(30)
@@ -192,37 +203,37 @@ class  Client(threading.Thread):
 
     def drawInventory(self, display, itens, ground):
         global step
-        #GROUND GRIDS
+        # GROUND GRIDS
         for idx in range(10):
             rect = pygame.Rect(resolution[choseResolution][0] / 2 - 4 * step + (idx % 2) * step,
                                2 * step + int(idx/2) * step, step, step)
             pygame.draw.rect(display, (200,200,200), rect, 3)
-        #GROUND ACCECIBLE ITENS
+        # GROUND ACCECIBLE ITENS
         for idx, item in enumerate(ground):
             rect = pygame.Rect(resolution[choseResolution][0] / 2 - 4 * step + (idx % 2) * step + .2 * step,
                                2 * step + int(idx/2) * step + .2 * step, step*.6, step*.6)
             pygame.draw.rect(display, (70,20,20), rect, 0)
 
-        #INVENTORY GRIDS
+        # INVENTORY GRIDS
         for idx in range(10):
             rect = pygame.Rect(resolution[choseResolution][0] / 2 - step + (idx % 2) * step,
                                2 * step + int(idx/2) * step, step, step)
             pygame.draw.rect(display, (200,200,200), rect, 3)
-        #INVENTOTY ITENS
+        # INVENTOTY ITENS
         for idx, item in enumerate(itens):
             rect = pygame.Rect(resolution[choseResolution][0] / 2 - step + (idx % 2) * step + .2 * step,
                                2 * step + int(idx/2) * step + .2 * step, step*.6, step*.6)
             pygame.draw.rect(display, (100,50,50), rect, 0)
 
-        #HELMET GRID
+        # HELMET GRID
         rect = pygame.Rect(resolution[choseResolution][0] / 2 + 2* step,
                            2 * step , step, step)
         pygame.draw.rect(display, (200, 200, 200), rect, 3)
-        #ARMOR GRID
+        # ARMOR GRID
         rect = pygame.Rect(resolution[choseResolution][0] / 2 + 2 * step,
                            4 * step, step, step)
         pygame.draw.rect(display, (200, 200, 200), rect, 3)
-        #GUN GRID
+        # GUN GRID
         rect = pygame.Rect(resolution[choseResolution][0] / 2 + 2 * step,
                            6 * step, step, step)
         pygame.draw.rect(display, (200,200,200), rect, 3)
@@ -252,19 +263,19 @@ class  Client(threading.Thread):
     def mouseOver(self):
         global step
         mpos = pygame.mouse.get_pos()
-        #MOUSE IN GROUND
+        # MOUSE IN GROUND
         for idx in range(10):
             xi = resolution[choseResolution][0] / 2 - 4 * step + (idx % 2) * step
             yi = 2 * step + int(idx/2) * step
             if mpos[0] > xi and mpos[1] > yi and mpos[0] < xi + step and mpos[1] < yi + step:
                 return idx, -1, -1
-        #MOUSE IN INVENTORY
+        # MOUSE IN INVENTORY
         for idx in range(10):
             xi = resolution[choseResolution][0] / 2 - step + (idx % 2) * step
             yi = 2 * step + int(idx/2) * step
             if mpos[0] > xi and mpos[1] > yi and mpos[0] < xi + step and mpos[1] < yi + step:
                 return -1, idx, -1
-        #MOUSE IN EQUIPS
+        # MOUSE IN EQUIPS
         for idx in range(3):
             xi = resolution[choseResolution][0] / 2 + 2 * step
             yi = 2 * step + idx * 2 * step
