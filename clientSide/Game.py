@@ -6,6 +6,7 @@ from threading import Thread
 from utils.Utils import RED, GREEN, BLUE, BLACK, WHITE, SKY, PURPLE, YELLOW, pointInsideRect, circlesCollide, squaresCollide, logf
 import json
 
+
 resolutions = [(800, 600)]
 choseResolution = 0
 resolution = resolutions[choseResolution]
@@ -15,7 +16,6 @@ font = pygame.font.SysFont('Comic Sans MS', 15)
 
 choseResolution = 0
 resolution = resolutions[choseResolution]
-
 
 
 class Game(Thread):
@@ -37,7 +37,7 @@ class Game(Thread):
     fpsCounter = 0
     lastDisplay = 0
     fps = 0
-
+    serverData = []  # Data recived from the server
 
     def __init__(self, name, map, socket, id):
         Thread.__init__(self)
@@ -46,46 +46,25 @@ class Game(Thread):
         self.player = Player(BLUE)
         self.skt = socket
         self.id = id
-
+        self.dataCapture = DataCapture(self.skt, self.serverData, [self.crashed])
 
     def run(self):
         self.player.prepare()
         self.players.append(self.player)
 
-        self.screen = pygame.display.set_mode(resolution[choseResolution])
-        self.screen.set_caption('Survival\'s King')
+        self.dataCapture.start()
+
+        self.screen = pygame.display.set_mode(resolution)
+        pygame.display.set_caption('Survival\'s King')
         clock = pygame.time.Clock()
         pygame.init()
 
         crashed = False
         while not crashed:
             self.handleUpdates()
-
-            # for item in self.items:
-            #     drawItem(item, gameDisplay)
-
-
-
-            # drawStatsPanel(p, gameDisplay)
-
-            # if keys[pygame.K_f]:
-            #     drawInventory(gameDisplay, p.itens, p.ground)
-
-            # fpsCounter += 1
-            # if pygame.time.get_ticks()-lastDisplay>=1000:
-            #     lastDisplay = pygame.time.get_ticks()
-            #     fps = fpsCounter
-            #     fpsCounter = 0
-
-            # fpsText = font.render('FPS: ' + str(fps), False, (200, 200, 200))
-            # gameDisplay.blit(fpsText, (10, 10))
-
-            # display.update()
-            # gameDisplay.fill((0,0,0))
-            # gameDisplay.fill(pygame.image.load('/sprits/ground.png'))
-
             clock.tick(30)
         pygame.quit()
+        self.dataCapture.join()
 
     def handleControls(self):
         for event in pygame.event.get():
@@ -136,22 +115,23 @@ class Game(Thread):
                     player.ground.append(item)
 
     def updateFromServer(self):
-        response = json.loads(self.skt.recv().decode())
-        if response["state"] != "gaming":
-            logf("Client: Locks like you are not inside a game")
-            self.crashed = True
-        else:
-            value = response["value"]
-            p = self.getPlayer(value["addr"])
-            if not p:
-                logf("Client: There is IP that is not gaming, but a recive data about he. Lets create he")
-                p = Player(WHITE)
-                p.prepare()
-            p.pos = value["pos"]
+        while len(self.serverData):
+            response = self.serverData.pop(0)
+            if response["state"] != "gaming":
+                logf("Client: Locks like you are not inside a game")
+                self.crashed = True
+            else:
+                value = response["value"]
+                p = self.getPlayer(value["addr"])
+                if not p:
+                    logf("Client: There is IP that is not gaming, but a recive data about he. Lets create he")
+                    p = Player(WHITE)
+                    p.prepare()
+                p.pos = value["pos"]
 
     def sendUpdatesToServer(self):
         response = {"state": "gaming", "value": {"gameId": self.id, "actions": [], "pos": self.player.pos}}
-        self.skt.send(json.dumps(response).encode())
+        self.skt.sendto(json.dumps(response).encode(), ("::1", 5000))
 
     def getPlayer(self, addr):
         for player in self.players:
@@ -269,4 +249,19 @@ class Game(Thread):
 
     def drawItem(self, i):
         draw.circle(self.screen, (0, 0, 140), i.pos, 5)
+
+
+class DataCapture(Thread):
+
+    def __init__(self, socket, serverData, crashed):
+        Thread.__init__(self)
+        self.skt = socket
+        self.serverData = serverData
+        self.crashed = crashed
+
+    def run(self):
+        while not self.crashed[0]:
+            data = json.loads(self.skt.recvfrom(1024)[0].decode())
+            self.serverData.append(data)
+            # if data["state"] == "exit": return
 

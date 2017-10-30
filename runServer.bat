@@ -1,0 +1,2 @@
+python MainServer.py
+PAUSE

@@ -83,35 +83,36 @@ class RequestHandler(Thread):
 
     def mainMenuHandle(self, client, request):
         global games
-        logf("Request: " + str(request) )
+        logf("Server: Request " + str(request), True)
         if request["ask"] == "get in game":  # GET IN GAME
             logf("Server: User request to get in game", True)
             name = request["value"]["name"]
-            logf('Adding player of client ' + str(client.addr) + " to game " + name)
+            logf('Server: Adding player of client ' + str(client.addr) + " to game " + name, True)
             player = Player(client)
             game = games.getByName(name)
             if not game:
-                logf("FAIL: There is not game with name " + name)
+                logf("Server: FAIL: There is not game with name " + name, True)
                 response = {"state": "main menu", "value": {"result": "Fail", "reason": "Chose game dosen't exists"}}
             else:
                 game.addPlayer(player)
-                logf("Sucess")
+                logf("Server: Sucess", True)
                 response = {"state": "main menu", "value": {"result": "Success", "name": game.nome, "map": game.map, "id": game.id}}
         elif request["ask"] == "create game":  # CREATE GAME
             logf("Server: User request to create game", True)
-            if "maxNumPlayers" in request["Value"]:
-                g = Game(request["value"]["name"], request["value"]["map"])
-            else:
+            if "maxNumPlayers" in request["value"]:
                 g = Game(request["value"]["name"], request["value"]["map"], request["value"]["maxNumPlayers"])
+            else:
+                g = Game(request["value"]["name"], request["value"]["map"])
             gameId = games.newGame(g)
             if gameId != -1:
-                logf('Created new game with id ' + str(gameId))
-                logf('Adding player of client ' + str(client.addr) + " to game " + str(gameId))
+                logf('Server: Created new game with id ' + str(gameId), True)
+                logf('Server: Adding player of client ' + str(client.addr) + " to game " + str(gameId), True)
                 player = Player(client)
                 games.getById(gameId).addPlayer(player)
-                response = {"state": "main menu", "value": {"result": "Fail", "reason": "Can't create game"}}
+                response = {"state": "main menu", "value": {"result": "Success", "name": games.getById(gameId).name,
+                                                            "map": games.getById(gameId).map, "id": gameId}}
             else:
-                response = {"state": "main menu", "value": {"result": "Success", "name": games.getById(gameId).nome, "map": games.getById(gameId).map, "id": gameId }}
+                response = {"state": "main menu", "value": {"result": "Fail", "reason": "Can't create game"}}
         elif request["ask"] == "list games":  # LIST GAMES
             logf("Server: User request to list all games", True)
             response = {"state": "main menu", "value": {"result": games.listAll()}}
@@ -122,7 +123,7 @@ class RequestHandler(Thread):
             # response = {"state": "main menu", "value": {"result": "Success"}}
         global sktSend
         logf("Server: Responding client", True)
-        sktSend.sendto(json.dumps(response).encode(), (client.addr, client.port))
+        sktSend.sendto(json.dumps(response).encode(), (client.addr, 5002))
 
     def gamingHandle(self, client, request):
         global games

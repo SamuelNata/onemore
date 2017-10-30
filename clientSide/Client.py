@@ -17,13 +17,13 @@ Make your choice by number: """
 class Client(Thread):
     skt = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
     serverIp = "::1"
-    port = 5002
     server = ("::1", 5000)
 
     def __init__(self):
         Thread.__init__(self)
         self.serverIp = "::1"
-        self.port = 5001
+        self.port = 5002
+        self.skt.bind(("::1", self.port))
 
     def run(self):
         global menu
@@ -35,9 +35,7 @@ class Client(Thread):
             if choice == 2:
                 self.createGame()
             if choice == 3:
-                print("printings rooms")
                 self.listRooms()
-                print("end printing")
             if choice == 4:
                 self.skt.close()
                 return
@@ -46,7 +44,8 @@ class Client(Thread):
         name = input("Tell me the room name (press ENTER and chose 3 to list all rooms): ")
         request = {"state":"main menu", "ask":"get in game", "value": {"name": name}}
         self.skt.sendto(json.dumps(request).encode(), (self.serverIp, self.port))
-        response = json.loads(self.skt.recvfrom(1024).decode())
+        response = json.loads(self.skt.recvfrom(1024)[0].decode())
+        logf("Client: Response recived for get in game" + str(response), True)
         if not response:
             logf("Client: (FAIL) not recing date.", True)
         elif response["value"]["result"] == "Fail":
@@ -82,6 +81,7 @@ class Client(Thread):
             print(" -Rooms List-")
             for gameName in response["value"]["result"]:
                 print(gameName + "(?/?)")
+            print(" - " + str(len(response["value"]["result"])) + " rooms found -")
             print('')
 
     def play(self, name, map, gameId):
