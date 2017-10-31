@@ -22,8 +22,8 @@ def vetUnitario(v):
 
 def logf(msg, show = False):
     global startTime
-    startTime = str(dt.now())[19] if startTime=='' else startTime
-    filename = "log/log "+(str(dt.now())[:19]).replace(':', '_')+".txt"
+    startTime = str(dt.now())[19] if startTime == '' else startTime
+    filename = "log/log " + startTime.replace(':', '_') + ".txt"
     f = open(filename, 'a')
     if show:
         print(str(dt.now())[:19] + ': ' + msg)

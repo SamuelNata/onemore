@@ -28,7 +28,11 @@ class Client(Thread):
     def run(self):
         global menu
         while True:
-            choice = int(input(menu))
+            try:
+                choice = int(input(menu))
+            except:
+                print("Entry must be a int, idiot! ¬¬'")
+                continue
             # print("choice: ", str(choice), ";   type: ", type(choice))
             if choice == 1:
                 self.getInGame()
@@ -43,9 +47,9 @@ class Client(Thread):
     def getInGame(self):
         name = input("Tell me the room name (press ENTER and chose 3 to list all rooms): ")
         request = {"state":"main menu", "ask":"get in game", "value": {"name": name}}
-        self.skt.sendto(json.dumps(request).encode(), (self.serverIp, self.port))
+        self.skt.sendto(json.dumps(request).encode(), self.server)
         response = json.loads(self.skt.recvfrom(1024)[0].decode())
-        logf("Client: Response recived for get in game" + str(response), True)
+        logf("Client: Response recived for get in game " + str(response), True)
         if not response:
             logf("Client: (FAIL) not recing date.", True)
         elif response["value"]["result"] == "Fail":
@@ -80,7 +84,7 @@ class Client(Thread):
         else:
             print(" -Rooms List-")
             for gameName in response["value"]["result"]:
-                print(gameName + "(?/?)")
+                print(gameName + " (?/?)")
             print(" - " + str(len(response["value"]["result"])) + " rooms found -")
             print('')
 

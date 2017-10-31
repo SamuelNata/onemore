@@ -96,7 +96,7 @@ class RequestHandler(Thread):
             else:
                 game.addPlayer(player)
                 logf("Server: Sucess", True)
-                response = {"state": "main menu", "value": {"result": "Success", "name": game.nome, "map": game.map, "id": game.id}}
+                response = {"state": "main menu", "value": {"result": "Success", "name": game.name, "map": game.map, "id": game.id}}
         elif request["ask"] == "create game":  # CREATE GAME
             logf("Server: User request to create game", True)
             if "maxNumPlayers" in request["value"]:
@@ -127,6 +127,7 @@ class RequestHandler(Thread):
 
     def gamingHandle(self, client, request):
         global games
+        logf("Server: Hendling " + str(request), True)
         data = request["value"]
         game = games.getById(data["gameId"])
         p = game.getPlayer(client)
@@ -147,7 +148,7 @@ class RequestHandler(Thread):
         global sktSend
         for player in game.players:
             if player.client.addr != p.client.addr:
-                sktSend.sentto(json.dumps(response).encode(), (player.client.addr, 5000))
+                sktSend.sentto(json.dumps(response).encode(), (player.client.addr, player.client.port))
 
 
 

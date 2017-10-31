@@ -59,8 +59,8 @@ class Game(Thread):
         clock = pygame.time.Clock()
         pygame.init()
 
-        crashed = False
-        while not crashed:
+        self.crashed = False
+        while not self.crashed:
             self.handleUpdates()
             clock.tick(30)
         pygame.quit()
@@ -100,6 +100,7 @@ class Game(Thread):
         self.updateFromServer()
         self.handleControls()
         self.localPlayerUpdate()
+        self.drawAll()
         self.sendUpdatesToServer()
 
     def localPlayerUpdate(self):
@@ -167,6 +168,9 @@ class Game(Thread):
         for item in self.items:
             self.drawItem(item)
 
+        for p in self.players:
+            self.drawPlayer(p)
+
         self.drawStatsPanel(self.player)
 
         if self.showInventory:
@@ -181,7 +185,7 @@ class Game(Thread):
         fpsText = font.render('FPS: ' + str(self.fps), False, (200, 200, 200))
         self.screen.blit(fpsText, (10, 10))
 
-        self.screen.update()
+        pygame.display.update()
         self.screen.fill((0,0,0))
 
     def drawPlayer(self, p):
@@ -192,8 +196,8 @@ class Game(Thread):
             draw.rect(self.screen, (0, 200, 0), life, 0)
 
     def drawStatsPanel(self, p):
-        res = resolution[choseResolution]
-        bg = pygame.Rect(res[0]/4, res[1]*0.9, res[0]/2, res[1]/10)
+        global resolution
+        bg = pygame.Rect(resolution[0]/4, resolution[1]*0.9, resolution[0]/2, resolution[1]/10)
         draw.rect(self.screen, (50, 50, 50), bg, 0)
 
         topMargin = 10
@@ -205,7 +209,7 @@ class Game(Thread):
         draw.rect(self.screen, (100, 100, 0), energy, 0)
 
         gunRay = 30
-        draw.circle(self.screen, (50, 50, 50), (int(res[0]/4-gunRay), res[1]-gunRay), gunRay, 0)
+        draw.circle(self.screen, (50, 50, 50), (int(resolution[0]/4-gunRay), resolution[1]-gunRay), gunRay, 0)
 
     def drawInventory(self, itens, ground):
         global step
